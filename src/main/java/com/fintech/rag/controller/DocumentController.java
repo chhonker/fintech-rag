@@ -36,9 +36,11 @@ public class DocumentController {
             summary = "Ingest a policy PDF into the vector store",
             description = """
                     Runs the full RAG ingestion pipeline for any PDF on the classpath:
-                    1. Reads the PDF page-by-page using Spring AI's PagePdfDocumentReader.
+                    1. Generates an MD5 hash of the PDF to check if it's already ingested.
+                       If identical, ingestion is skipped (idempotent).
+                       If modified, old chunks are deleted first.
                     2. Splits text into ~500-token chunks (min 100 chars) using TokenTextSplitter.
-                    3. Optionally stamps a 'category' metadata field on every chunk
+                    3. Stamps 'file_hash' and Optionally stamps a 'category' metadata field on every chunk
                        (e.g. category=upi) — enables filtered searches via documentFilter.
                     4. Sends chunks to Gemini (gemini-embedding-001) in batches of 5 to generate
                        768-dimensional vectors. A 5-second delay between batches respects the
@@ -84,5 +86,24 @@ public class DocumentController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error ingesting document: " + e.getMessage());
         }
+    }
+
+    @Operation(
+            summary = "List all uniquely ingested documents",
+            description = "Returns a list of all distinct files currently in the vector store along with their category and MD5 hash."
+    )
+    @org.springframework.web.bind.annotation.GetMapping("/documents")
+    public ResponseEntity<java.util.List<com.fintech.rag.dto.DocumentInfo>> listDocuments() {
+        return ResponseEntity.ok(ingestionService.listDocuments());
+    }
+
+    @Operation(
+            summary = "Delete an ingested document",
+            description = "Deletes all chunks associated with the specified filename from the vector store."
+    )
+    @org.springframework.web.bind.annotation.DeleteMapping("/documents/{filename}")
+    public ResponseEntity<String> deleteDocument(@org.springframework.web.bind.annotation.PathVariable String filename) {
+        ingestionService.deleteDocument(filename);
+        return ResponseEntity.ok("Document '" + filename + "' deleted successfully.");
     }
 }
