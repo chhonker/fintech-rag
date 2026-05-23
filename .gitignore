@@ -1,0 +1,75 @@
+# ── Gradle cache & build output ───────────────────────────────────────────────
+# These are generated on every build and must never be committed.
+.gradle/
+build/
+
+# The Gradle wrapper JAR is the exception — it lets anyone build the project
+# without needing a local Gradle installation, so it stays in source control.
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Compiled Java artifacts ───────────────────────────────────────────────────
+*.class
+*.jar
+*.war
+*.ear
+
+# Re-allow the Gradle wrapper JAR excluded above (*.jar would catch it otherwise)
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Spring Boot / application logs ────────────────────────────────────────────
+*.log
+logs/
+spring-shell.log
+
+# ── IntelliJ IDEA ─────────────────────────────────────────────────────────────
+# What we DO track (project-wide settings, safe to share):
+#   .idea/misc.xml          — compiler/language level settings
+#   .idea/gradle.xml        — Gradle project linkage
+#   .idea/vcs.xml           — VCS root mappings
+#   .idea/modules.xml       — module list
+#   .idea/compiler.xml      — annotation processor config
+#   .idea/modules/*.iml     — module descriptor
+#   .idea/.gitignore        — IntelliJ's own ignore rules inside .idea/
+#
+# What we IGNORE (user-specific, machine-specific, or sensitive):
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/dictionaries/
+.idea/httpRequests/
+.idea/dataSources.xml
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/data_source_mapping.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/jarRepositories.xml
+.idea/assetWizardSettings.xml
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+# .vscode/settings.json is kept — it holds project-level editor config
+# that is useful to share (e.g. file associations, formatting rules).
+# Ignore only the user-specific files:
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# ── OS generated files ────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+# Never commit real credentials. Use .env.example as a template instead.
+.env
+.env.*
+!.env.example

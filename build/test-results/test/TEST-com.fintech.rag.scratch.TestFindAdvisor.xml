@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.fintech.rag.scratch.TestFindAdvisor" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-23T07:12:40.856Z" hostname="SUMIT-NITRO" time="2.098">
-  <properties/>
-  <testcase name="test()" classname="com.fintech.rag.scratch.TestFindAdvisor" time="2.098"/>
-  <system-out><![CDATA[FOUND: org/springframework/ai/chat/client/advisor/vectorstore/QuestionAnswerAdvisor.class in C:\\Users\\Sumit\\.gradle\\caches\\modules-2\\files-2.1\\org.springframework.ai\\spring-ai-advisors-vector-store\\1.1.6\\536db838b775ee0f246f248e276241c7a7e83aab\\spring-ai-advisors-vector-store-1.1.6.jar
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
