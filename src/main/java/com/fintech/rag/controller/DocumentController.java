@@ -6,10 +6,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import com.fintech.rag.dto.DocumentInfo;
 
 @Tag(
         name = "Document Ingestion",
@@ -48,7 +54,6 @@ public class DocumentController {
                     5. Stores embeddings in PostgreSQL via pgvector (HNSW, cosine distance).
 
                     Expected duration: several minutes (throttled by Gemini RPM quota).
-                    This endpoint is NOT idempotent — calling it twice inserts duplicate chunks.
                     """,
             parameters = {
                     @Parameter(
@@ -92,8 +97,8 @@ public class DocumentController {
             summary = "List all uniquely ingested documents",
             description = "Returns a list of all distinct files currently in the vector store along with their category and MD5 hash."
     )
-    @org.springframework.web.bind.annotation.GetMapping("/documents")
-    public ResponseEntity<java.util.List<com.fintech.rag.dto.DocumentInfo>> listDocuments() {
+    @GetMapping("/documents")
+    public ResponseEntity<List<DocumentInfo>> listDocuments() {
         return ResponseEntity.ok(ingestionService.listDocuments());
     }
 
@@ -101,8 +106,8 @@ public class DocumentController {
             summary = "Delete an ingested document",
             description = "Deletes all chunks associated with the specified filename from the vector store."
     )
-    @org.springframework.web.bind.annotation.DeleteMapping("/documents/{filename}")
-    public ResponseEntity<String> deleteDocument(@org.springframework.web.bind.annotation.PathVariable String filename) {
+    @DeleteMapping("/documents/{filename}")
+    public ResponseEntity<String> deleteDocument(@PathVariable String filename) {
         ingestionService.deleteDocument(filename);
         return ResponseEntity.ok("Document '" + filename + "' deleted successfully.");
     }
