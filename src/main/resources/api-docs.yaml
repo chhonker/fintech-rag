@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Document Ingestion
+  description: |
+    Manages ingestion of policy PDF documents into the pgvector knowledge base.
+    This is a one-time (or on-demand) operation that must be run before any
+    Dispute Resolution or Policy Q&A queries can return grounded answers.
+    Re-running ingestion on an already-populated store will add duplicate chunks —
+    clear the vector store table first if a full re-index is needed.
+- name: Policy Q&A
+  description: |
+    Conversational Q&A over the ingested banking policy documents.
+    Backed by RAG (pgvector similarity search) + multi-turn conversation memory.
+    Each session is identified by a conversationId — the model remembers previous
+    questions and answers within the same session, enabling natural follow-up questions
+    like "what about UPI?" after asking about refund timelines.
+    Memory is stored in-memory (lost on restart); sessions can be explicitly cleared.
+- name: Dispute Resolution
+  description: |
+    Evaluates customer grievances against ingested policy documents using RAG + function-calling tools.
+    The AI acts as a formal Grievance Redressal Officer — it retrieves the top-4 relevant policy
+    chunks from pgvector, may invoke TransactionTool or LedgerTool to look up account data,
+    and produces a policy-grounded resolution or escalation recommendation.
+paths:
+  /api/policy/ask:
+    post:
+      tags:
+      - Policy Q&A
+      summary: Ask a policy question
+      description: |
+        Answers questions about banking policies using RAG + conversation memory.
+
+        How it works:
+        1. MessageChatMemoryAdvisor loads prior turns for the given conversationId
+           and prepends them to the prompt (multi-turn context).
+        2. QuestionAnswerAdvisor embeds the question and retrieves the top-4
+           semantically matching policy chunks from pgvector.
+        3. Gemini 2.5 Flash generates an answer grounded in the retrieved chunks.
+        4. The new user message and AI response are saved back to memory.
+
+        Session behaviour:
+        - Omit conversationId (or send null) → a new UUID is generated and returned.
+        - Pass the returned conversationId in follow-up requests → model remembers context.
+        - Each session retains the last 20 messages (MessageWindowChatMemory).
+      operationId: ask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyAskRequest"
+            examples:
+              New session:
+                summary: First question — no conversationId needed
+                description: New session
+                value:
+                  question: What is the refund timeline for UPI payments?
+              Follow-up in same session:
+                summary: Follow-up question — pass the conversationId from the previous
+                  response
+                description: Follow-up in same session
+                value:
+                  question: What if the refund is delayed beyond that period?
+                  conversationId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+              Customer rights query:
+                summary: Asking about customer rights
+                description: Customer rights query
+                value:
+                  question: What are my rights if a complaint is not resolved within
+                    the stipulated time?
+        required: true
+      responses:
+        "200":
+          description: "Answer generated — includes conversationId, answer text, and\
+            \ source policy chunks"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PolicyAskResponse"
+        "400":
+          description: Validation failed — question is blank or missing
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PolicyAskResponse"
+        "500":
+          description: AI call failed or vector store unavailable
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PolicyAskResponse"
+  /api/ingest:
+    post:
+      tags:
+      - Document Ingestion
+      summary: Ingest policy document into vector store
+      description: |
+        Runs the full RAG ingestion pipeline for the bundled policy PDF:
+        1. Reads 'Customer Rights, Grievance Redressal and Compensation Policy 2023.pdf'
+           page-by-page using Spring AI's PagePdfDocumentReader.
+        2. Splits the text into ~500-token chunks (min 100 chars) using TokenTextSplitter.
+        3. Sends chunks to Gemini (gemini-embedding-001) in batches of 5 to generate
+           768-dimensional vector embeddings. A 5-second delay between batches respects
+           the Gemini API rate limit (RPM quota).
+        4. Stores embeddings in PostgreSQL via pgvector using HNSW indexing
+           with cosine distance.
+
+        This endpoint is idempotent in intent but NOT in effect — calling it multiple
+        times will insert duplicate rows into the vector store.
+        Expected duration: several minutes (throttled by Gemini RPM quota).
+      operationId: ingestDocument
+      responses:
+        "200":
+          description: Document successfully chunked and ingested into pgvector
+          content:
+            '*/*':
+              schema:
+                type: string
+        "500":
+          description: "Ingestion failed — check logs for PDF read error, embedding\
+            \ failure, or DB connectivity issue"
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/dispute/evaluate:
+    get:
+      tags:
+      - Dispute Resolution
+      summary: Evaluate a dispute (GET)
+      description: |
+        Convenience GET endpoint — pass the grievance as a query parameter.
+        Useful for quick testing from a browser or curl.
+        For production use, prefer the POST endpoint to avoid query-string length limits
+        and to prevent the grievance text from appearing in server access logs.
+      operationId: evaluateGet
+      parameters:
+      - name: message
+        in: query
+        description: The customer's grievance in plain English.
+        required: true
+        schema:
+          type: string
+        example: I was charged twice for transaction TXN-4821 on 12th May. Please
+          investigate.
+      responses:
+        "200":
+          description: Grievance evaluated successfully — returns AI resolution and
+            source policy chunks
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DisputeResponse"
+        "500":
+          description: AI call or tool invocation failed
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DisputeResponse"
+    post:
+      tags:
+      - Dispute Resolution
+      summary: Evaluate a dispute (POST)
+      description: |
+        Primary endpoint for dispute resolution.
+        The grievance is sent in the request body so it does not appear in server logs or URLs.
+
+        Internally this triggers a multi-step AI pipeline:
+        1. QuestionAnswerAdvisor embeds the grievance and retrieves the top-4 matching policy chunks from pgvector.
+        2. The AI (Gemini 2.5 Flash, acting as Grievance Redressal Officer) may invoke
+           TransactionTool or LedgerTool to look up transaction/account data.
+        3. A formal resolution is generated citing the applicable policy clause,
+           or an escalation to a human supervisor is recommended if context is insufficient.
+      operationId: evaluatePost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - message
+            examples:
+              Double charge complaint:
+                summary: Customer charged twice for the same transaction
+                description: Double charge complaint
+                value:
+                  message: I was charged twice for transaction TXN-4821 on 12th May.
+                    Please investigate and process a refund.
+              Refund not received:
+                summary: Customer waiting for a refund past the policy deadline
+                description: Refund not received
+                value:
+                  message: My refund for order ORD-9934 was approved 10 days ago but
+                    has not been credited. What is the policy and what action will
+                    be taken?
+              Unauthorised transaction:
+                summary: Customer disputes a transaction they did not initiate
+                description: Unauthorised transaction
+                value:
+                  message: There is an unauthorised debit of ₹4500 from my account
+                    on 10th May. I did not initiate this. What are my rights under
+                    the grievance policy?
+        required: true
+      responses:
+        "200":
+          description: Grievance evaluated — returns AI resolution and source policy
+            chunks
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DisputeResponse"
+        "500":
+          description: AI call or tool invocation failed
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DisputeResponse"
+  /api/policy/session/{conversationId}:
+    delete:
+      tags:
+      - Policy Q&A
+      summary: Clear a conversation session
+      description: |
+        Wipes all stored message history for the given conversationId.
+        After this call, the next question sent with the same conversationId
+        will be treated as a brand new conversation with no prior context.
+
+        Use this when:
+        - A user explicitly ends their session.
+        - You want to free up memory for long-running applications.
+        - Testing: reset a session between test cases.
+      operationId: clearSession
+      parameters:
+      - name: conversationId
+        in: path
+        description: The conversationId returned by a previous /ask response.
+        required: true
+        schema:
+          type: string
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+      responses:
+        "204":
+          description: Session cleared — no content returned
+        "500":
+          description: Failed to clear session
+components:
+  schemas:
+    PolicyAskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 1
+        conversationId:
+          type: string
+      required:
+      - question
+    DocumentSource:
+      type: object
+      properties:
+        fileName:
+          type: string
+        pageNumber:
+          type: integer
+          format: int32
+    PolicyAskResponse:
+      type: object
+      properties:
+        conversationId:
+          type: string
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentSource"
+    DisputeResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentSource"
