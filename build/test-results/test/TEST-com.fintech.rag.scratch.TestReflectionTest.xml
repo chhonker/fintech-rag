@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fintech.rag.scratch.TestReflectionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-23T07:12:42.956Z" hostname="SUMIT-NITRO" time="0.002">
+  <properties/>
+  <testcase name="test()" classname="com.fintech.rag.scratch.TestReflectionTest" time="0.002"/>
+  <system-out><![CDATA[METHODS:
+content
+entity
+entity
+entity
+chatResponse
+chatClientResponse
+responseEntity
+responseEntity
+responseEntity
+END METHODS
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
