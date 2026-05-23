@@ -16,6 +16,9 @@ import org.springframework.util.DigestUtils;
 import java.io.InputStream;
 import java.util.List;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 public class KnowledgeIngestionService {
 
@@ -36,15 +39,15 @@ public class KnowledgeIngestionService {
      *
      * @param classpathFilename the PDF filename as it appears in src/main/resources
      *                          e.g. "UPI_TPAP_Roles_Responsibilities_Dispute_Redressal.pdf"
-     * @param category          optional logical group tag stamped on every chunk as metadata
-     *                          e.g. "upi", "grievance", "refund" — enables filtered searches later.
+     * @param categories        optional logical group tags stamped on every chunk as metadata
+     *                          e.g. ["upi", "grievance", "refund"] — enables filtered searches later.
      *                          Pass null to skip tagging.
      */
-    public void ingestDocument(String classpathFilename, String category) {
+    public void ingestDocument(String classpathFilename, List<String> categories) {
         Resource resource = resourceLoader.getResource("classpath:" + classpathFilename);
 
         try {
-            log.info("Starting ingestion. file={} category={}", classpathFilename, category);
+            log.info("Starting ingestion. file={} categories={}", classpathFilename, categories);
             
             // Generate MD5 hash of the file to track versioning and deduplication
             String fileHash;
@@ -84,16 +87,16 @@ public class KnowledgeIngestionService {
             List<Document> chunks = textSplitter.apply(documents);
             log.info("Split into {} chunks.", chunks.size());
 
-            // 3. Stamp category metadata on every chunk when provided.
+            // 3. Stamp categories metadata on every chunk when provided.
             //    This enables filtered vector searches later:
-            //    SearchRequest.filterExpression("category == 'upi'")
+            //    SearchRequest.filterExpression("category IN ('upi', 'neft')")
             chunks.forEach(chunk -> {
                 chunk.getMetadata().put("file_hash", fileHash);
-                if (category != null && !category.isBlank()) {
-                    chunk.getMetadata().put("category", category);
+                if (categories != null && !categories.isEmpty()) {
+                    chunk.getMetadata().put("categories", categories);
                 }
             });
-            log.info("Stamped file_hash='{}' and category='{}' on all {} chunks.", fileHash, category, chunks.size());
+            log.info("Stamped file_hash='{}' and categories='{}' on all {} chunks.", fileHash, categories, chunks.size());
 
             // 4. Embed in batches of 5 (respects Gemini RPM quota) and store in pgvector
             throttledEmbedding(chunks);
@@ -132,13 +135,25 @@ public class KnowledgeIngestionService {
     }
 
     public List<DocumentInfo> listDocuments() {
+        ObjectMapper mapper = new ObjectMapper();
         return jdbcTemplate.query(
-            "SELECT DISTINCT metadata->>'file_name' as file_name, metadata->>'category' as category, metadata->>'file_hash' as file_hash FROM vector_store WHERE metadata->>'file_name' IS NOT NULL",
-            (rs, rowNum) -> new DocumentInfo(
-                rs.getString("file_name"),
-                rs.getString("category"),
-                rs.getString("file_hash")
-            )
+            "SELECT DISTINCT metadata->>'file_name' as file_name, metadata->'categories' as categories, metadata->>'file_hash' as file_hash FROM vector_store WHERE metadata->>'file_name' IS NOT NULL",
+            (rs, rowNum) -> {
+                List<String> categories = null;
+                String catJson = rs.getString("categories");
+                if (catJson != null && !catJson.isBlank()) {
+                    try {
+                        categories = mapper.readValue(catJson, new TypeReference<List<String>>() {});
+                    } catch (Exception e) {
+                        log.warn("Failed to parse categories JSON: {}", catJson);
+                    }
+                }
+                return new DocumentInfo(
+                    rs.getString("file_name"),
+                    categories,
+                    rs.getString("file_hash")
+                );
+            }
         );
     }
 

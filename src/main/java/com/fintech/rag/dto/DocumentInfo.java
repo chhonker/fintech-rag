@@ -1,4 +1,6 @@
 package com.fintech.rag.dto;
 
-public record DocumentInfo(String fileName, String category, String fileHash) {
+import java.util.List;
+
+public record DocumentInfo(String fileName, List<String> categories, String fileHash) {
 }

@@ -63,11 +63,12 @@ public class DocumentController {
                             required = true
                     ),
                     @Parameter(
-                            name = "category",
+                            name = "categories",
                             description = """
                                     Optional logical group tag stamped on every chunk as metadata.
                                     Use this to group related PDFs under a shared label so they can be
                                     searched together with a single filter expression.
+                                    Can be passed multiple times or comma-separated.
                                     Examples: upi, grievance, refund, rbi-circular
                                     """,
                             example = "upi"
@@ -81,11 +82,11 @@ public class DocumentController {
     @PostMapping("/ingest")
     public ResponseEntity<String> ingestDocument(
             @RequestParam String document,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) java.util.List<String> categories) {
         try {
-            ingestionService.ingestDocument(document, category);
+            ingestionService.ingestDocument(document, categories);
             String msg = "Document '" + document + "' ingested successfully"
-                    + (category != null && !category.isBlank() ? " with category='" + category + "'" : "")
+                    + (categories != null && !categories.isEmpty() ? " with categories='" + String.join(",", categories) + "'" : "")
                     + ".";
             return ResponseEntity.ok(msg);
         } catch (Exception e) {
