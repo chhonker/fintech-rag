@@ -3,20 +3,20 @@ spring:
   application:
     name: fintech-rag
   datasource:
-    url: jdbc:postgresql://localhost:5432/vectordb?currentSchema=fintech_app,public
-    username: myuser
-    password: mypassword
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   flyway:
     schemas: fintech_app
     create-schemas: true
   ai:
     google:
       genai:
-        api-key: ${GEMINI_API_KEY:AIzaSyAUmw91Mxr82WHGTo6QWyDrOhxAf191u-w}
-        project-id: gen-lang-client-0447781857
+        api-key: ${GEMINI_API_KEY}
+        project-id: ${GEMINI_PROJECT_ID}
         embedding:
-          api-key: ${GEMINI_API_KEY:AIzaSyAUmw91Mxr82WHGTo6QWyDrOhxAf191u-w}
-          project-id: gen-lang-client-0447781857
+          api-key: ${GEMINI_API_KEY}
+          project-id: ${GEMINI_PROJECT_ID}
           text:
             options:
               model: gemini-embedding-001
