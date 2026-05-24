@@ -49,11 +49,16 @@ public class KnowledgeIngestionService {
         try {
             log.info("Starting ingestion. file={} categories={}", classpathFilename, categories);
             
-            // Generate MD5 hash of the file to track versioning and deduplication
-            String fileHash;
+            // Read bytes once — only for MD5 hashing.
+            // ClassPathResource.getInputStream() creates a fresh stream on each call,
+            // so the original resource is passed directly to PagePdfDocumentReader below.
+            byte[] pdfBytes;
             try (InputStream is = resource.getInputStream()) {
-                fileHash = DigestUtils.md5DigestAsHex(is);
+                pdfBytes = is.readAllBytes();
             }
+            
+            // Generate MD5 hash of the file to track versioning and deduplication
+            String fileHash = DigestUtils.md5DigestAsHex(pdfBytes);
 
             // Check if this exact file version is already ingested
             List<String> existingHashes = jdbcTemplate.queryForList(
@@ -71,7 +76,10 @@ public class KnowledgeIngestionService {
                 deleteDocument(classpathFilename);
             }
 
-            // 1. Read PDF page-by-page
+            // 1. Read PDF page-by-page using the original classpath resource.
+            //    ByteArrayResource must NOT be used here — its getFilename() returns null,
+            //    which causes PagePdfDocumentReader to silently return 0 documents and also
+            //    stores null as the file_name metadata in pgvector, breaking hash deduplication.
             PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(resource);
             List<Document> documents = pdfReader.get();
             log.info("Read {} pages from '{}'.", documents.size(), classpathFilename);
@@ -137,7 +145,7 @@ public class KnowledgeIngestionService {
     public List<DocumentInfo> listDocuments() {
         ObjectMapper mapper = new ObjectMapper();
         return jdbcTemplate.query(
-            "SELECT DISTINCT metadata->>'file_name' as file_name, metadata->'categories' as categories, metadata->>'file_hash' as file_hash FROM vector_store WHERE metadata->>'file_name' IS NOT NULL",
+            "SELECT DISTINCT metadata->>'file_name' as file_name, metadata->>'categories' as categories, metadata->>'file_hash' as file_hash FROM vector_store WHERE metadata->>'file_name' IS NOT NULL",
             (rs, rowNum) -> {
                 List<String> categories = null;
                 String catJson = rs.getString("categories");
