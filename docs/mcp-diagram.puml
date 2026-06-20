@@ -1,0 +1,58 @@
+@startuml
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+autonumber
+
+actor "User" as User
+box "MCP Host (Spring Boot Application)" #LightCyan
+participant "Spring AI\n(Host/Orchestrator)" as Host
+participant "Gemini\n(LLM Engine)" as LLM
+participant "MCP Client\n(Universal Translator)" as Client
+end box
+
+box "External Systems" #LightYellow
+participant "MCP Server\n(Java Microservice)" as Server
+database "PostgreSQL\n(Ledger/Txn DB)" as DB
+end box
+
+== 1. Initialization & Tool Discovery ==
+Host -> Client: Initialize ARDA Agent
+note right: The Spring Boot app starts up and prepares the agent's context.
+Client -> Server: JSON-RPC: listTools()
+Server --> Client: Returns standard JSON menu\n(getTransactionStatus, getLedgerStatus)
+Client --> Host: Registers available tools into context
+
+== 2. The User Request ==
+User -> Host: "My transaction UPI-12345 failed, what is the policy?"
+Host -> LLM: Send User Prompt + System Guardrails + Tool Schemas
+note right: Gemini evaluates the prompt and realizes it needs external data.
+
+== 3. First ReAct Loop: Fetching Transaction Status ==
+LLM -> Host: Proprietary Tool Call Request:\ngetTransactionStatus("UPI-12345")
+Host -> Client: Forward tool call
+note right: The MCP Client translates Gemini's specific JSON format into the universal MCP standard.
+Client -> Server: JSON-RPC: executeCommand("getTransactionStatus", {"id": "UPI-12345"})
+Server -> DB: Execute Java @Tool method
+DB --> Server: Transaction Record
+Server --> Client: Standardized Response:\n{"status": "FAILED", "reason": "BANK_SERVER_TIMEOUT"}
+Client --> Host: Translate back to LLM format
+Host -> LLM: Inject Tool Observation back into Context Window
+
+== 4. Second ReAct Loop: Fetching Ledger Status ==
+LLM -> Host: Proprietary Tool Call Request:\ngetLedgerStatus("UPI-12345")
+note right: The AI autonomously realizes it lacks ledger data to calculate the refund, so it pauses to call Tool #2.
+Host -> Client: Forward tool call
+Client -> Server: JSON-RPC: executeCommand("getLedgerStatus", {"id": "UPI-12345"})
+Server -> DB: Execute Java @Tool method
+DB --> Server: Ledger Record
+Server --> Client: Standardized Response:\n{"accountDebited": true, "beneficiaryCredited": false}
+Client --> Host: Translate back to LLM format
+Host -> LLM: Inject Tool Observation back into Context Window
+
+== 5. Synthesis & Final Generation ==
+LLM -> Host: Generate Final Resolution\n(Stop Condition Reached)
+note right: The LLM synthesizes the tool observations (FAILED timeout + Account Debited) with its RAG policy knowledge.
+Host --> User: "Your transaction failed due to a timeout. Because your account was debited, you will receive a refund in T+1 days."
+
+@enduml
