@@ -21,6 +21,11 @@ spring:
             options:
               model: gemini-embedding-001
               dimensions: 768
+    mcp:
+      server:
+        name: fintech-rag-mcp
+        version: 1.0.0
+        type: SYNC
 
 # Models for dispute resolution and policy resolution
 

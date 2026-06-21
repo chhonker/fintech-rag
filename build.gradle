@@ -35,6 +35,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
+    // Pinned to 2.0.0 explicitly — the 1.1.6 BOM resolves spring-ai-starter-mcp-server to a
+    // version whose @McpTool/@McpToolParam annotations live under org.springaicommunity.mcp.annotation
+    // (a separate community artifact). 2.0.0 moves these into org.springframework.ai.mcp.annotation.
+    implementation group: 'org.springframework.ai', name: 'spring-ai-mcp-annotations', version: '2.0.0'
+    implementation group: 'org.springframework.ai', name: 'spring-ai-starter-mcp-server', version: '2.0.0'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
     // implementation 'org.springframework.retry:spring-retry'
