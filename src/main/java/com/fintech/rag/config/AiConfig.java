@@ -34,7 +34,8 @@ import java.util.List;
 @Configuration
 public class AiConfig {
 
-    // ── System prompts ────────────────────────────────────────────────────────
+
+    // ── System prompts, todo: move to .yml for environment specific profile ─────────────────────
 
     private static final String DISPUTE_SYSTEM_PROMPT = """
             You are an official Banking Grievance Redressal Officer.
@@ -52,6 +53,14 @@ public class AiConfig {
             the user contact customer support for further help.
             """;
 
+    // todo: Chat model defaults - extract to application.yml for environment specific modification
+    public static final String DEFAULT_POLICY_CHAT_MODEL = "gemini-2.5-flash-lite";
+    public static final double POLICY_CHAT_TEMPERATURE = 0.3;
+    public static final int TOP_K_4 = 4;
+    public static final String DISPUTE_CHAT_MODEL = "gemini-2.5-flash";
+    public static final double DISPUTE_CHAT_TEMPERATURE = 0.2;
+    public static final int CHAT_MEMORY_MAX_MESSAGES = 20;
+
     // ── ChatMemory ────────────────────────────────────────────────────────────
 
     /**
@@ -64,7 +73,7 @@ public class AiConfig {
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
                 .chatMemoryRepository(new InMemoryChatMemoryRepository())
-                .maxMessages(20)
+                .maxMessages(CHAT_MEMORY_MAX_MESSAGES)
                 .build();
     }
 
@@ -89,12 +98,12 @@ public class AiConfig {
         return ChatClient.builder(chatModel)
                 .defaultSystem(DISPUTE_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
-                        .model("gemini-2.5-flash")
-                        .temperature(0.2)
+                        .model(DISPUTE_CHAT_MODEL)
+                        .temperature(DISPUTE_CHAT_TEMPERATURE)
                         .build())
                 .defaultAdvisors(
                         QuestionAnswerAdvisor.builder(vectorStore)
-                                .searchRequest(SearchRequest.builder().topK(4).build())
+                                .searchRequest(SearchRequest.builder().topK(TOP_K_4).build())
                                 .build()
                 )
                 .defaultTools(tools.toArray(new Object[0]))
@@ -125,13 +134,13 @@ public class AiConfig {
         return ChatClient.builder(chatModel)
                 .defaultSystem(POLICY_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
-                        .model("gemini-2.5-flash")
-                        .temperature(0.3)
+                        .model(DEFAULT_POLICY_CHAT_MODEL)
+                        .temperature(POLICY_CHAT_TEMPERATURE)
                         .build())
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         QuestionAnswerAdvisor.builder(vectorStore)
-                                .searchRequest(SearchRequest.builder().topK(4).build())
+                                .searchRequest(SearchRequest.builder().topK(TOP_K_4).build())
                                 .build()
                 )
                 .build();

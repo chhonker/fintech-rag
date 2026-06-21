@@ -22,6 +22,8 @@ spring:
               model: gemini-embedding-001
               dimensions: 768
 
+# Models for dispute resolution and policy resolution
+
 # ─── Learning: YAML-driven AI Chat Model Configuration ───────────────────────
 #
 # Spring AI can auto-configure the ChatModel entirely from YAML — no Java code
