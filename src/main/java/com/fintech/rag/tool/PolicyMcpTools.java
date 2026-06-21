@@ -2,8 +2,8 @@ package com.fintech.rag.tool;
 
 import com.fintech.rag.dto.PolicyAskRequest;
 import com.fintech.rag.service.PolicyQueryService;
-import org.springframework.ai.mcp.annotation.McpTool;
-import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Service;
 
 /**

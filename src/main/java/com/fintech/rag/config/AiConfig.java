@@ -99,7 +99,8 @@ public class AiConfig {
                 .defaultSystem(DISPUTE_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
                         .model(DISPUTE_CHAT_MODEL)
-                        .temperature(DISPUTE_CHAT_TEMPERATURE))
+                        .temperature(DISPUTE_CHAT_TEMPERATURE)
+                        .build())
                 .defaultAdvisors(
                         QuestionAnswerAdvisor.builder(vectorStore)
                                 .searchRequest(SearchRequest.builder().topK(TOP_K_4).build())
@@ -134,7 +135,8 @@ public class AiConfig {
                 .defaultSystem(POLICY_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
                         .model(DEFAULT_POLICY_CHAT_MODEL)
-                        .temperature(POLICY_CHAT_TEMPERATURE))
+                        .temperature(POLICY_CHAT_TEMPERATURE)
+                        .build())
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         QuestionAnswerAdvisor.builder(vectorStore)

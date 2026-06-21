@@ -1,7 +1,7 @@
 package com.fintech.rag.tool;
 
-import org.springframework.ai.mcp.annotation.McpTool;
-import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;

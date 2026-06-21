@@ -22,54 +22,97 @@ logs/
 spring-shell.log
 
 # ── IntelliJ IDEA ─────────────────────────────────────────────────────────────
-# What we DO track (project-wide settings, safe to share):
-#   .idea/misc.xml          — compiler/language level settings
-#   .idea/gradle.xml        — Gradle project linkage
-#   .idea/vcs.xml           — VCS root mappings
-#   .idea/modules.xml       — module list
-#   .idea/compiler.xml      — annotation processor config
-#   .idea/modules/*.iml     — module descriptor
-#   .idea/.gitignore        — IntelliJ's own ignore rules inside .idea/
-#
-# What we IGNORE (user-specific, machine-specific, or sensitive):
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/usage.statistics.xml
-.idea/shelf/
-.idea/dictionaries/
-.idea/httpRequests/
-.idea/dataSources.xml
-.idea/dataSources/
-.idea/dataSources.local.xml
-.idea/data_source_mapping.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-.idea/jarRepositories.xml
-.idea/assetWizardSettings.xml
+# Strategy: ignore the whole .idea/ directory, then whitelist only the
+# project-wide settings worth sharing. This way any new user-specific or
+# machine-specific file IntelliJ drops in (developer-tools.xml, workspace.xml,
+# dataSources, http logs, etc.) is ignored automatically — no need to chase
+# each new filename.
+.idea/*
+.idea/modules/
+.idea/libraries/
+
+# Whitelisted — safe, project-wide settings that help others open the project:
+!.idea/.gitignore        # IntelliJ's own ignore rules inside .idea/
+!.idea/misc.xml          # compiler / language level settings
+!.idea/gradle.xml        # Gradle project linkage
+!.idea/vcs.xml           # VCS root mappings
+!.idea/compiler.xml      # annotation processor config
+
+# Common IntelliJ artefacts (also covered by .idea/* above, listed for clarity):
+*.iml
+*.ipr
+*.iws
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+
+# ── Eclipse ───────────────────────────────────────────────────────────────────
+.project
+.classpath
+.settings/
+.apt_generated/
+.factorypath
+bin/
+
+# ── NetBeans ──────────────────────────────────────────────────────────────────
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+.nb-gradle/
 
 # ── VS Code ───────────────────────────────────────────────────────────────────
 # .vscode/settings.json is kept — it holds project-level editor config
 # that is useful to share (e.g. file associations, formatting rules).
 # Ignore only the user-specific files:
 .vscode/launch.json
+.vscode/tasks.json
 .vscode/*.code-workspace
+.history/
+*.vsix
 
 # ── OS generated files ────────────────────────────────────────────────────────
 # macOS
 .DS_Store
+.DS_Store?
 .AppleDouble
 .LSOverride
 ._*
+.Spotlight-V100
+.Trashes
 
 # Windows
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
+ehthumbs_vista.db
 desktop.ini
 $RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ── Editor / temp / backup files ──────────────────────────────────────────────
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+*.rej
+*#
+.*.sw[a-p]
 
 # ── Environment & secrets ─────────────────────────────────────────────────────
 # Never commit real credentials. Use .env.example as a template instead.
 .env
 .env.*
 !.env.example
+#*.pem
+#*.key
+#secrets.properties
+#application-local.yml
+#application-local.yaml
+#application-local.properties

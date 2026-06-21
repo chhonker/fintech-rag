@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-    set('springAiVersion', "2.0.0")
+    set('springAiVersion', "1.1.8")
 }
 
 dependencies {
@@ -34,16 +34,15 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-google-genai-embedding'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
-    //remove milestone version once lts version is published
-    implementation 'org.springframework.ai:spring-ai-advisors-vector-store:2.0.0-M8'
-    // Pinned to 2.0.0 explicitly — the 1.1.6 BOM resolves spring-ai-starter-mcp-server to a
-    // version whose @McpTool/@McpToolParam annotations live under org.springaicommunity.mcp.annotation
-    // (a separate community artifact). 2.0.0 moves these into org.springframework.ai.mcp.annotation.
-    implementation group: 'org.springframework.ai', name: 'spring-ai-mcp-annotations', version: '2.0.0'
-    implementation group: 'org.springframework.ai', name: 'spring-ai-starter-mcp-server', version: '2.0.0'
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
+    // MCP server + annotations, version-managed by the 1.1.8 BOM.
+    // At 1.1.x the @McpTool/@McpToolParam annotations resolve from the transitive
+    // org.springaicommunity:mcp-annotations artifact (package org.springaicommunity.mcp.annotation).
+    implementation 'org.springframework.ai:spring-ai-mcp-annotations'
+    implementation 'org.springframework.ai:spring-ai-starter-mcp-server'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
-    // implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
