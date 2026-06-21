@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-    set('springAiVersion', "1.1.6")
+    set('springAiVersion', "2.0.0")
 }
 
 dependencies {
@@ -27,14 +27,15 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
     implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
     implementation 'org.springframework.ai:spring-ai-google-genai-embedding'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
-    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
+    //remove milestone version once lts version is published
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store:2.0.0-M8'
     // Pinned to 2.0.0 explicitly — the 1.1.6 BOM resolves spring-ai-starter-mcp-server to a
     // version whose @McpTool/@McpToolParam annotations live under org.springaicommunity.mcp.annotation
     // (a separate community artifact). 2.0.0 moves these into org.springframework.ai.mcp.annotation.
