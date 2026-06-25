@@ -27,6 +27,27 @@ spring:
         version: 1.0.0
         type: SYNC
 
+# Expose Prometheus so Spring AI's gen_ai.client.token.usage metrics can be scraped.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+
+# ── Token metering & per-user quota ───────────────────────────────────────────
+app:
+  security:
+    # Map of API key (the X-API-Key header value) → userId.
+    # Demo keys only — externalize via env/secret manager for production.
+    api-keys:
+      "demo-key-alice": alice
+      "demo-key-bob": bob
+  quota:
+    # Cheap burst guard: max requests per rolling minute per user.
+    max-requests-per-minute: 20
+    # Real cost guard: max total tokens per rolling 24h per user.
+    max-tokens-per-day: 100000
+
 # Models for dispute resolution and policy resolution
 
 # ─── Learning: YAML-driven AI Chat Model Configuration ───────────────────────

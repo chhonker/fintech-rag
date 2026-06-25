@@ -1,6 +1,8 @@
 package com.fintech.rag.config;
 
 import com.fintech.rag.tool.DisputeTool;
+import com.fintech.rag.usage.TokenUsageAdvisor;
+import com.fintech.rag.usage.TokenUsageRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -94,7 +96,8 @@ public class AiConfig {
     @Qualifier("disputeChatClient")
     public ChatClient disputeChatClient(ChatModel chatModel,
                                         VectorStore vectorStore,
-                                        List<DisputeTool> tools) {
+                                        List<DisputeTool> tools,
+                                        TokenUsageRepository usageRepository) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(DISPUTE_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
@@ -102,6 +105,7 @@ public class AiConfig {
                         .temperature(DISPUTE_CHAT_TEMPERATURE)
                         .build())
                 .defaultAdvisors(
+                        new TokenUsageAdvisor(usageRepository, "dispute"),
                         QuestionAnswerAdvisor.builder(vectorStore)
                                 .searchRequest(SearchRequest.builder().topK(TOP_K_4).build())
                                 .build()
@@ -130,7 +134,8 @@ public class AiConfig {
     @Qualifier("policyChatClient")
     public ChatClient policyChatClient(ChatModel chatModel,
                                        VectorStore vectorStore,
-                                       ChatMemory chatMemory) {
+                                       ChatMemory chatMemory,
+                                       TokenUsageRepository usageRepository) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(POLICY_SYSTEM_PROMPT)
                 .defaultOptions(GoogleGenAiChatOptions.builder()
@@ -138,6 +143,7 @@ public class AiConfig {
                         .temperature(POLICY_CHAT_TEMPERATURE)
                         .build())
                 .defaultAdvisors(
+                        new TokenUsageAdvisor(usageRepository, "policy"),
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         QuestionAnswerAdvisor.builder(vectorStore)
                                 .searchRequest(SearchRequest.builder().topK(TOP_K_4).build())
